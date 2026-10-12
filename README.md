@@ -2,7 +2,7 @@
 
 Aplikasi web sederhana untuk membantu administrasi data karyawan, absensi dan lembur, hasil produksi roti, perhitungan insentif, penggajian, slip gaji, serta laporan.
 
-Aplikasi dibuat menggunakan **HTML5, CSS, Vanilla JavaScript, Tailwind CSS CDN, Font Awesome CDN, dan Supabase JavaScript Client v2**. Tidak memerlukan Node.js, `npm install`, atau proses build.
+Aplikasi dibuat menggunakan **HTML5, CSS, Vanilla JavaScript, Tailwind CSS CDN, Font Awesome CDN, dan Supabase JavaScript Client v2**. 
 
 ## 🔗 Demo Aplikasi
 
