@@ -8,7 +8,7 @@ Aplikasi dibuat menggunakan **HTML5, CSS, Vanilla JavaScript, Tailwind CSS CDN, 
 
 **Demo online:** setelah GitHub Pages aktif, ganti placeholder link berikut dengan URL GitHub Pages milik repository kamu.
 
-[**Buka Demo Roti Pagi Bakery**](https://helenayunita0306.github.io/Sistem-Penggajian-Pabrik-Roti/)
+[**Buka Demo Roti Pagi Bakery**](https://helenayunita0306-netizen.github.io/Sistem-Penggajian-Pabrik-Roti/)
 
 Contoh: jika username GitHub kamu `namakamu` dan repository-nya `bakery-payroll-app`, tautannya menjadi:
 
