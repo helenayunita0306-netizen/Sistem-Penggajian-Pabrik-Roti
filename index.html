@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#5B3427"><title>Roti Pagi Bakery — Payroll</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{cream:'#FFF8F0',bread:'#F3E2CC',peach:'#FCE7D6',caramel:'#C87941',terra:'#B85C38',chocolate:'#5B3427',espresso:'#35231D'}}}}</script>
+  <link rel="stylesheet" href="style.css">
+  <!-- Supabase CDN must load before supabase-config.js and app.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="supabase-config.js"></script><script defer src="app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside id="sidebar" class="sidebar">
+      <div class="brand"><div class="brand-icon"><i class="fa-solid fa-bread-slice"></i></div><div><strong>Roti Pagi</strong><small>BAKERY • PAYROLL</small></div><button id="collapseBtn" class="collapse-btn" aria-label="Ciutkan sidebar"><i class="fa-solid fa-angles-left"></i></button></div>
+      <div class="company-chip"><span class="status-dot"></span><span>Administrasi Pabrik</span></div>
+      <nav id="navMenu" class="nav-menu" aria-label="Navigasi utama">
+        <button class="nav-item active" data-page="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></button>
+        <button class="nav-item" data-page="employees"><i class="fa-solid fa-users"></i><span>Data Karyawan</span></button>
+        <button class="nav-item" data-page="attendance"><i class="fa-solid fa-calendar-check"></i><span>Absensi & Lembur</span></button>
+        <button class="nav-item" data-page="production"><i class="fa-solid fa-wheat-awn"></i><span>Data Produksi</span></button>
+        <button class="nav-item" data-page="incentives"><i class="fa-solid fa-award"></i><span>Insentif Karyawan</span></button>
+        <button class="nav-item" data-page="payroll"><i class="fa-solid fa-wallet"></i><span>Penggajian</span></button>
+        <button class="nav-item" data-page="slips"><i class="fa-solid fa-file-invoice-dollar"></i><span>Slip Gaji & Laporan</span></button>
+        <button class="nav-item" data-page="settings"><i class="fa-solid fa-sliders"></i><span>Pengaturan</span></button>
+      </nav>
+      <div class="sidebar-bottom"><div class="bread-note"><i class="fa-solid fa-cookie-bite"></i><p><b>Setiap hari, lebih baik.</b><small>Data rapi, tim bahagia.</small></p></div><button id="modeBtn" class="mode-btn"><i class="fa-solid fa-database"></i><span>Mode Demo</span><span class="mode-pill">DEMO</span></button></div>
+    </aside>
+    <div id="mobileShade" class="mobile-shade"></div>
+    <main class="main-area">
+      <header class="topbar"><div class="top-left"><button id="mobileMenuBtn" class="mobile-menu" aria-label="Buka menu"><i class="fa-solid fa-bars"></i></button><div><p class="eyebrow">ROTI PAGI BAKERY / ADMIN</p><h1 id="pageTitle">Dashboard</h1></div></div><div class="top-actions"><div class="date-chip"><i class="fa-regular fa-calendar"></i><span id="todayLabel"></span></div><div class="avatar">RP</div></div></header>
+      <section class="page-wrap"><div id="modeNotice" class="mode-notice"><i class="fa-solid fa-circle-info"></i><span>Mode demo aktif. Data contoh hanya tersimpan di sesi browser dan tidak dikirim ke Supabase.</span><button id="dismissNotice" aria-label="Tutup pemberitahuan">×</button></div><div id="pageContent"></div></section>
+      <footer class="footer">© <span id="yearNow"></span> Roti Pagi Bakery <span>•</span> Sistem Informasi Penggajian & Insentif</footer>
+    </main>
+  </div>
+  <div id="modalRoot"></div><div id="toastRoot" class="toast-root" aria-live="polite"></div>
+</body></html>
