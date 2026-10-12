@@ -12,10 +12,6 @@ Aplikasi dibuat menggunakan **HTML5, CSS, Vanilla JavaScript, Tailwind CSS CDN, 
 
 Contoh: jika username GitHub kamu `namakamu` dan repository-nya `bakery-payroll-app`, tautannya menjadi:
 
-`https://namakamu.github.io/bakery-payroll-app/`
-
-> Aplikasi langsung terbuka dalam **Mode Demo** secara default. Mode Demo tidak memerlukan akun, email, password, URL Supabase, maupun API key. Data contoh dikelola di browser menggunakan `localStorage` dan tidak dikirim ke database Supabase.
-
 ## ✨ Fitur
 
 - **Dashboard:** ringkasan karyawan, penggajian, insentif, lembur, produksi, dan status penggajian.
