@@ -1,6 +1,6 @@
 /* Isi SUPABASE_URL dan SUPABASE_ANON_KEY milik proyek Anda. Jangan pernah menaruh service_role key di browser. */
-const SUPABASE_URL = 'https://appbtizjkriqomfebizl.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwcGJ0aXpqa3JpcW9tZmViaXpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4MTY2NTQsImV4cCI6MjEwNzM5MjY1NH0.g051gNpipyxUkkH2Cbz27fYLFw1BvCnwqyVbCNt8EvM';
+const SUPABASE_URL = 'https://psstpphkpdgihdvmandn.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzc3RwcGhrcGRnaWhkdm1hbmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4Mzk1MDUsImV4cCI6MjEwODQxNTUwNX0.HyKkx7YJgZxdkEXzx35ZKmiGej1ATwznCpUQdzi6bNU';
 
 const Supa = (() => {
   const configured = () => typeof window.supabase !== 'undefined' && SUPABASE_URL.startsWith('https://') && !SUPABASE_URL.includes('ISI_URL') && SUPABASE_ANON_KEY.length > 20 && !SUPABASE_ANON_KEY.includes('ISI_ANON');
