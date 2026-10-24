@@ -35,7 +35,7 @@ function periodAttendance(){return state.data.attendance.filter(a=>filteredPerio
 function periodPayroll(){return state.data.payrolls.filter(p=>filteredPeriod(p.period_month));}
 function incentiveFor(empId,period){return state.data.production.filter(p=>p.employee_id===empId&&filteredPeriod(p.production_date,period)).reduce((s,p)=>s+Number(p.quantity_accepted)*Number(p.incentive_rate),0);}
 function hoursFor(empId,period){return state.data.attendance.filter(a=>a.employee_id===empId&&filteredPeriod(a.attendance_date,period)).reduce((s,a)=>s+Number(a.overtime_hours||0),0);}
-function calcPayroll(e,period,overrides={}){const s=state.data.settings;const rows=state.data.attendance.filter(a=>a.employee_id===e.id&&filteredPeriod(a.attendance_date,period));const absences=rows.filter(a=>a.attendance_status==='Alpha').length;const attendanceBonus=rows.length>0&&rows.every(a=>['Hadir','Libur'].includes(a.attendance_status))?Number(s.attendance_bonus||0):0;const vals={base_salary:Number(e.base_salary)||0,fixed_allowance:Number(s.fixed_allowance)||0,attendance_bonus,overtime_pay:hoursFor(e.id,period)*Number(s.overtime_rate_per_hour||0),production_incentive:incentiveFor(e.id,period),absence_deduction:absences*Number(s.absence_deduction_per_day||0),other_deductions:0,bpjs_deduction:Number(s.bpjs_deduction||0),income_tax_deduction:Number(s.income_tax_deduction||0),...overrides};vals.gross_pay=vals.base_salary+vals.fixed_allowance+vals.attendance_bonus+vals.overtime_pay+vals.production_incentive;vals.total_deductions=vals.absence_deduction+vals.other_deductions+vals.bpjs_deduction+vals.income_tax_deduction;vals.net_pay=vals.gross_pay-vals.total_deductions;return vals;}
+function calcPayroll(e,period,overrides={}){const s={...blankData().settings,...(state.data.settings||{})};const rows=state.data.attendance.filter(a=>a.employee_id===e.id&&filteredPeriod(a.attendance_date,period));const absences=rows.filter(a=>a.attendance_status==='Alpha').length;const attendanceBonus=rows.length>0&&rows.every(a=>['Hadir','Libur'].includes(a.attendance_status))?Number(s.attendance_bonus||0):0;const vals={base_salary:Number(e.base_salary)||0,fixed_allowance:Number(s.fixed_allowance)||0,attendance_bonus,overtime_pay:hoursFor(e.id,period)*Number(s.overtime_rate_per_hour||0),production_incentive:incentiveFor(e.id,period),absence_deduction:absences*Number(s.absence_deduction_per_day||0),other_deductions:0,bpjs_deduction:Number(s.bpjs_deduction||0),income_tax_deduction:Number(s.income_tax_deduction||0),...overrides};vals.gross_pay=vals.base_salary+vals.fixed_allowance+vals.attendance_bonus+vals.overtime_pay+vals.production_incentive;vals.total_deductions=vals.absence_deduction+vals.other_deductions+vals.bpjs_deduction+vals.income_tax_deduction;vals.net_pay=vals.gross_pay-vals.total_deductions;return vals;}
 function statusBadge(s){const c=s==='Dibayar'||s==='Aktif'||s==='Hadir'?'green':s==='Disetujui'||s==='Izin'||s==='Sakit'?'orange':s==='Alpha'||s==='Tidak Aktif'?'red':'gray';return `<span class="badge badge-${c}">${esc(s||'—')}</span>`;}
 function pageHeading(title,desc,actions=''){return `<div class="page-heading"><div><h2>${title}</h2><p>${desc}</p></div><div class="actions">${actions}</div></div>`;}
 function periodFilter(){return `<div class="filter-row"><input type="month" class="field filter-field" id="periodFilter" value="${esc(state.filterPeriod.slice(0,7))}" aria-label="Pilih periode"></div>`;}
@@ -102,15 +102,25 @@ async function refreshSupabase(){
   }));
   state.data.payrolls  = payrolls || [];
   state.data.products  = (products && products.length) ? products : blankData().products;
-  // FIX: settingsMap sudah berupa { company: {...}, payroll_policy: {...} } dari settingsGet()
-  const pol  = settingsMap?.payroll_policy || {};
-  const comp = settingsMap?.company || {};
+  // Ambil settings dari Supabase, merge dengan blankData().settings sebagai fallback penuh
+  // agar semua key (attendance_bonus, overtime_rate_per_hour, dll.) selalu terdefinisi
+  const defaultSettings = blankData().settings;
+  const pol  = (settingsMap && typeof settingsMap.payroll_policy === 'object' && settingsMap.payroll_policy !== null)
+    ? settingsMap.payroll_policy : {};
+  const comp = (settingsMap && typeof settingsMap.company === 'object' && settingsMap.company !== null)
+    ? settingsMap.company : {};
   state.data.settings = {
-    ...blankData().settings,
-    ...pol,
-    company_name:    comp.name    || 'Roti Pagi Bakery',
-    company_address: comp.address || '',
+    ...defaultSettings,   // pastikan SEMUA key default ada
+    ...pol,               // timpa dengan nilai dari Supabase jika ada
+    company_name:    comp.name    || defaultSettings.company_name,
+    company_address: comp.address || defaultSettings.company_address,
   };
+  // Pastikan semua numeric key tidak undefined/null (guard ekstra)
+  ['overtime_rate_per_hour','fixed_allowance','attendance_bonus','absence_deduction_per_day',
+   'bpjs_deduction','income_tax_deduction','regular_hours_per_day'].forEach(k=>{
+    if(state.data.settings[k] === undefined || state.data.settings[k] === null)
+      state.data.settings[k] = defaultSettings[k] ?? 0;
+  });
   state.mode = 'supabase';
 }
 async function switchMode(){
