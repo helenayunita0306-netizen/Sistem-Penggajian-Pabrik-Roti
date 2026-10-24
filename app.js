@@ -256,11 +256,10 @@ async function migrateToSupabase(){
 function exportCSV(){const list=state.data.payrolls.filter(p=>filteredPeriod(p.period_month));const headers=['Nomor Penggajian','Periode','Kode Karyawan','Nama','Departemen','Gaji Pokok','Tunjangan Tetap','Bonus Kehadiran','Lembur','Insentif','Potongan Ketidakhadiran','Potongan Lain','BPJS','PPh 21','Penghasilan Kotor','Total Potongan','Gaji Bersih','Status'];const rows=list.map(p=>{const e={...employee(p.employee_id),...(p.calculation_snapshot||{})};return [p.payroll_number,p.period_month,e.employee_code,e.full_name,e.department,p.base_salary,p.fixed_allowance,p.attendance_bonus,p.overtime_pay,p.production_incentive,p.absence_deduction,p.other_deductions,p.bpjs_deduction,p.income_tax_deduction,p.gross_pay,p.total_deductions,p.net_pay,p.status]});const csv=[headers,...rows].map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`rekap-penggajian-${state.filterPeriod.slice(0,7)}.csv`;a.click();URL.revokeObjectURL(a.href);notify('Laporan CSV berhasil disiapkan.');}
 function confirmAction(message,yes){openModal('Konfirmasi tindakan',message,`<p style="font-size:12px;color:#765D50;line-height:1.7">${message}</p>`,`<button class="btn" data-action="close-modal">Batal</button><button class="btn btn-danger" data-action="confirm-yes">Ya, lanjutkan</button>`);$('#modalRoot .modal').dataset.confirm='1';window._confirmYes=yes;}
 async function handleAction(action,el){const eid=el.dataset.id;switch(action){case 'close-modal':$('#modalRoot').innerHTML='';break;case 'add-employee':employeeForm();break;case 'edit-employee':{const e=employee(eid);employeeForm(e);$('#employeeForm').dataset.editId=eid;break;}case 'detail-employee':{const e=employee(eid);openModal('Detail Karyawan',e.full_name,`<div class="form-grid">${[['Kode',e.employee_code],['Nama',e.full_name],['Jabatan',e.position],['Departemen',e.department],['Hubungan kerja',e.employment_type],['Tanggal masuk',dateID(e.join_date)],['Gaji pokok',money(e.base_salary)],['Kontak',e.phone||'—'],['Status',e.status]].map(([k,v])=>`<div class="form-group"><label>${k}</label><div>${esc(v)}</div></div>`).join('')}</div>`,`<button class="btn" data-action="close-modal">Tutup</button><button class="btn btn-primary" data-action="edit-employee" data-id="${eid}">Edit data</button>`);break;}case 'delete-employee':{const hasHistory=state.data.attendance.some(a=>a.employee_id===eid)||state.data.production.some(p=>p.employee_id===eid)||state.data.payrolls.some(p=>p.employee_id===eid);confirmAction(hasHistory?'Karyawan memiliki riwayat transaksi. Sistem akan menonaktifkan karyawan agar riwayat tetap terjaga.':'Karyawan tidak memiliki riwayat transaksi. Hapus permanen?',async()=>{try{if(hasHistory){const e=employee(eid);if(state.mode==='demo'){e.status='Tidak Aktif';saveDemo();}else{await Supa.employees.save({status:'Tidak Aktif'},eid);e.status='Tidak Aktif';}}else await deleteEntity('employees',eid);render();notify(hasHistory?'Karyawan dinonaktifkan.':'Karyawan dihapus.');}catch(e){notify(failMessage(e),'error');}});break;}case 'add-attendance':attendanceForm();break;case 'edit-attendance':{const a=state.data.attendance.find(x=>x.id===eid);attendanceForm(a);$('#attendanceForm').dataset.editId=eid;break;}case 'delete-attendance':confirmAction('Hapus catatan absensi ini?',async()=>{try{await deleteEntity('attendance',eid);render();notify('Catatan absensi dihapus.');}catch(e){notify(failMessage(e),'error');}});break;case 'add-production':productionForm();break;case 'edit-production':{const p=state.data.production.find(x=>x.id===eid);productionForm(p);$('#productionForm').dataset.editId=eid;break;}case 'delete-production':confirmAction('Hapus catatan produksi ini? Periksa dampaknya terhadap insentif sebelum melanjutkan.',async()=>{try{await deleteEntity('production',eid);render();notify('Catatan produksi dihapus.');}catch(e){notify(failMessage(e),'error');}});break;case 'manage-products':productManager();break;case 'add-product':{const raw=getForm('newProductForm');if(!raw)return;try{if(state.data.products.some(p=>p.product_code.toLowerCase()===raw.product_code.toLowerCase()||p.product_name.toLowerCase()===raw.product_name.toLowerCase()))throw new Error('Kode atau nama produk sudah terdaftar.');const row={product_code:raw.product_code.trim(),product_name:raw.product_name.trim(),incentive_rate:num(raw.incentive_rate),status:'Aktif'};await saveEntity('products',row,null);productManager();notify('Produk ditambahkan.');}catch(e){notify(failMessage(e),'error');}break;}case 'save-product-rates':try{for(const input of $$('[data-product-rate]')){const p=state.data.products.find(x=>x.id===input.dataset.productRate);if(p){p.incentive_rate=num(input.value);if(state.mode==='supabase')await Supa.products.save({incentive_rate:p.incentive_rate},p.id);}}saveDemo();productManager();notify('Tarif produk diperbarui.');}catch(e){notify(failMessage(e),'error');}break;case 'toggle-product':{const p=state.data.products.find(x=>x.id===eid);if(p){p.status=p.status==='Aktif'?'Tidak Aktif':'Aktif';try{if(state.mode==='supabase')await Supa.products.save({status:p.status},p.id);saveDemo();productManager();}catch(e){notify(failMessage(e),'error');}}break;}case 'generate-payroll':generatePayrollModal();break;case 'submit-generate-payroll':await generatePayroll();break;case 'submit-employee':await submitEmployee();break;case 'submit-attendance':await submitAttendance();break;case 'submit-production':await submitProduction();break;case 'view-payroll':{const p=state.data.payrolls.find(x=>x.id===eid);if(p)payrollDetail(p);break;}case 'approve-payroll':{const p=state.data.payrolls.find(x=>x.id===eid);if(p)confirmAction('Setujui penggajian ini? Periksa semua komponen sebelum persetujuan.',()=>updatePayrollStatus(p,'Disetujui'));break;}case 'pay-payroll':{const p=state.data.payrolls.find(x=>x.id===eid);if(p)confirmAction('Tandai penggajian ini sebagai Dibayar? Tindakan ini akan mengunci perubahan biasa.',()=>updatePayrollStatus(p,'Dibayar'));break;}case 'slip-payroll':{const p=state.data.payrolls.find(x=>x.id===eid);if(p)showSlip(p);break;}case 'print-slip':window.print();break;case 'export-report':exportCSV();break;case 'save-settings':await saveSettings();break;case 'toggle-mode':await switchMode();break;case 'migrate-to-supabase':confirmAction('Kirim semua data demo (karyawan, absensi, produksi, penggajian) dari localStorage ke Supabase? Data yang sudah ada di Supabase tidak akan terduplikasi.',async()=>{await migrateToSupabase();});break;
-case 'reset-demo':confirmAction('Reset seluruh data demo ke data awal? Perubahan data demo saat ini akan hilang.',()=>{localStorage.removeItem('rbp_demo_data');loadDemo();render();notify('Data demo direset.');});break;case 'confirm-yes':$('#modalRoot').innerHTML='';if(window._confirmYes){const fn=window._confirmYes;window._confirmYes=null;await fn();}break;case 'login-supabase':{const raw=getForm('loginForm');if(!raw)return;try{await Supa.signIn(raw.email,raw.password);await refreshSupabase();$('#modalRoot').innerHTML='';render();notify('Berhasil masuk ke Supabase.');}catch(e){notify(failMessage(e),'error');}break;}case 'dismiss-notice':$('#modeNotice').classList.add('hidden');sessionStorage.setItem('rbp_notice_dismissed','1');break;case 'backdrop-close':if(el.target===el)$('#modalRoot').innerHTML='';break;case 'toggle-sidebar':document.body.classList.toggle('sidebar-collapsed');break;case 'mobile-menu':$('#sidebar').classList.toggle('mobile-open');$('#mobileShade').classList.toggle('show');break;}}
+case 'reset-demo':confirmAction('Reset seluruh data demo ke data awal? Perubahan data demo saat ini akan hilang.',()=>{localStorage.removeItem('rbp_demo_data');loadDemo();render();notify('Data demo direset.');});break;case 'confirm-yes':$('#modalRoot').innerHTML='';if(window._confirmYes){const fn=window._confirmYes;window._confirmYes=null;await fn();}break;case 'login-supabase':{const raw=getForm('loginForm');if(!raw)return;try{await Supa.signIn(raw.email,raw.password);await refreshSupabase();$('#modalRoot').innerHTML='';render();notify('Berhasil masuk ke Supabase. Mode LIVE aktif.');}catch(e){notify(failMessage(e),'error');}break;}
+case 'use-demo-mode':$('#modalRoot').innerHTML='';loadDemo();render();notify('Berjalan dalam mode demo. Data tidak tersimpan ke Supabase.');break;case 'dismiss-notice':$('#modeNotice').classList.add('hidden');sessionStorage.setItem('rbp_notice_dismissed','1');break;case 'backdrop-close':if(el.target===el)$('#modalRoot').innerHTML='';break;case 'toggle-sidebar':document.body.classList.toggle('sidebar-collapsed');break;case 'mobile-menu':$('#sidebar').classList.toggle('mobile-open');$('#mobileShade').classList.toggle('show');break;}}
 function readRemoteRow(type,row){return row;}
 async function init(){
-  // Tampilkan loading sementara cek session Supabase
-  loadDemo();
   $('#todayLabel').textContent=new Date().toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
   $('#yearNow').textContent=new Date().getFullYear();
   $('#navMenu').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b){state.page=b.dataset.page;state.search='';render();$('#sidebar').classList.remove('mobile-open');$('#mobileShade').classList.remove('show');}});
@@ -271,28 +270,39 @@ async function init(){
   $('#modeBtn').addEventListener('click',switchMode);
   $('#dismissNotice').addEventListener('click',()=>handleAction('dismiss-notice',$('#dismissNotice')));
 
-  // FIX: render() dulu dalam mode demo agar UI tidak kosong, lalu cek session Supabase.
-  // Jika session ada, load data Supabase dan render ulang SEBELUM user bisa berinteraksi.
-  render();
-
   if(Supa.isConfigured()){
-    // Tampilkan indikator loading di tombol mode
-    const modeBtn = $('#modeBtn');
-    if(modeBtn) modeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Menghubungkan…</span><span class="mode-pill">…</span>';
+    // Tampilkan layar loading penuh sementara cek session
+    $('#pageContent').innerHTML='<div class="empty-state"><i class="fa-solid fa-spinner fa-spin" style="font-size:2rem;color:var(--caramel)"></i><b>Menghubungkan ke Supabase…</b><p>Mohon tunggu sebentar.</p></div>';
     try{
       const session = await Supa.getSession();
       if(session){
-        await refreshSupabase(); // state.mode diset ke 'supabase' di sini
+        // Session aktif → langsung load data Supabase
+        await refreshSupabase();
         render();
         notify('Terhubung ke Supabase. Mode LIVE aktif.');
       } else {
-        // Tidak ada session — tetap demo, render ulang agar tombol mode tampil benar
-        render();
+        // Belum login → tampilkan halaman login dulu, jangan masuk mode demo
+        loadLoginPage();
       }
     }catch(e){
-      console.warn('Supabase auto-connect gagal:',e.message);
-      render(); // pastikan tombol mode kembali ke tampilan demo
+      console.warn('Supabase gagal:', e.message);
+      // Jika Supabase tidak bisa dihubungi, fallback ke demo dengan pesan jelas
+      loadDemo();
+      render();
+      notify('Tidak dapat terhubung ke Supabase: '+e.message+'. Berjalan dalam mode demo.','error');
     }
+  } else {
+    // Kredensial belum diisi → mode demo
+    loadDemo();
+    render();
   }
+}
+
+function loadLoginPage(){
+  // Render shell UI dulu agar sidebar/header tampil
+  loadDemo();
+  render();
+  // Lalu tampilkan modal login yang tidak bisa ditutup (wajib login)
+  $('#modalRoot').innerHTML=`<div class="modal-backdrop"><div class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div><h3><i class="fa-solid fa-bread-slice" style="color:var(--caramel);margin-right:8px"></i>Masuk ke Roti Pagi Bakery</h3><p>Sistem membutuhkan autentikasi untuk mengakses data.</p></div></div><div class="modal-body"><form id="loginForm"><div class="form-grid"><div class="form-group full"><label>Email</label><input class="field" type="email" name="email" placeholder="admin@rotipagi.com" required autofocus></div><div class="form-group full"><label>Password</label><input class="field" type="password" name="password" required></div></div><p class="hint">Gunakan akun yang sudah dibuat di Supabase Authentication.</p></form></div><div class="modal-foot"><button class="btn btn-soft" data-action="use-demo-mode"><i class="fa-solid fa-flask"></i> Gunakan Mode Demo</button><button class="btn btn-primary" data-action="login-supabase"><i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk</button></div></div></div>`;
 }
 document.addEventListener('DOMContentLoaded',init);
