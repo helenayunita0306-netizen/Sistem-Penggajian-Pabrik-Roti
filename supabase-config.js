@@ -19,6 +19,30 @@ const Supa = (() => {
     else throw new Error('Operasi database tidak dikenal.');
     const {data,error}=await q; if(error) throw new Error(error.message); return data;
   }
+
+  /* --- Settings helpers ---
+   * Tabel payroll_settings menyimpan data sebagai key-value JSONB.
+   * Dua baris yang digunakan: setting_key='company' dan setting_key='payroll_policy'.
+   * settingsGet() mengembalikan plain object { company, payroll_policy } untuk kemudahan konsumsi di app.js.
+   * settingsUpsert(key, value) menyimpan/memperbarui satu baris berdasarkan setting_key.
+   */
+  async function settingsGet() {
+    const db = getClient();
+    const { data, error } = await db.from('payroll_settings').select('setting_key,setting_value');
+    if (error) throw new Error(error.message);
+    const map = {};
+    (data || []).forEach(row => { map[row.setting_key] = row.setting_value; });
+    return map;
+  }
+  async function settingsUpsert(key, value, description) {
+    const db = getClient();
+    const { error } = await db.from('payroll_settings').upsert(
+      { setting_key: key, setting_value: value, description, updated_at: new Date().toISOString() },
+      { onConflict: 'setting_key' }
+    );
+    if (error) throw new Error(error.message);
+  }
+
   const api = {
     isConfigured: configured,
     getClient,
@@ -28,9 +52,11 @@ const Supa = (() => {
     employees: {all:()=>query('employees','select',null,{order:'full_name',ascending:true}),save:(row,id)=>id?query('employees','update',row,{id}):query('employees','insert',row),remove:id=>query('employees','delete',null,{id})},
     attendance: {all:()=>query('attendance','select',null,{order:'attendance_date'}),save:(row,id)=>id?query('attendance','update',row,{id}):query('attendance','insert',row),remove:id=>query('attendance','delete',null,{id})},
     production: {all:()=>query('production_records','select',null,{order:'production_date'}),save:(row,id)=>id?query('production_records','update',row,{id}):query('production_records','insert',row),remove:id=>query('production_records','delete',null,{id})},
+    /* FIX: products API sebelumnya tidak ada — menyebabkan refreshSupabase() throw "Cannot read properties of undefined" */
     products: {all:()=>query('products','select',null,{order:'product_name',ascending:true}),save:(row,id)=>id?query('products','update',row,{id}):query('products','insert',row),remove:id=>query('products','delete',null,{id})},
     payrolls: {all:()=>query('payrolls','select',null,{order:'period_month'}),save:(row,id)=>id?query('payrolls','update',row,{id}):query('payrolls','insert',row),remove:id=>query('payrolls','delete',null,{id})},
-    settings: {all:()=>query('payroll_settings','select'),save:(row,id)=>id?query('payroll_settings','update',row,{id}):query('payroll_settings','insert',row)},
+    /* FIX: settings kini menggunakan settingsGet/settingsUpsert yang sesuai dengan struktur key-value tabel payroll_settings */
+    settings: { get: settingsGet, upsert: settingsUpsert },
   };
   return api;
 })();
